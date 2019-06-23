@@ -1,0 +1,10 @@
+queue:
+  queue_region: elasticmq
+  queue_base_url: http://localhost:9324
+  queue_name: test-myrpc
+  aws_access_key_id: x
+  aws_secret_access_key: x
+  sqs_session_token: ""
+number_messages_per_receive: 1
+visibility_timeout: 20
+wait_time_seconds: 20
