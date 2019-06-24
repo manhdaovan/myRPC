@@ -11,6 +11,7 @@ See `/example` directory source code for more details
 - Message sender/receiver/deleter 
 
 # TODO
+- [ ] Auto generate Service code in case of protobuf message
 - [ ] Unit test :D
 
 # Future work
