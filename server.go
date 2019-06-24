@@ -176,7 +176,7 @@ func (srv *RPCServer) handleMsg(msg *RPCMessage) error {
 		fmt.Printf("--> delete msg: %p\n", msg)
 	}
 
-	return nil
+	return err
 }
 
 func (srv *RPCServer) shutdown() {
