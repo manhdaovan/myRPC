@@ -3,7 +3,6 @@ package myrpc
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/pkg/errors"
 )
 
@@ -15,34 +14,40 @@ type MessageSender interface {
 	SendSyncMsg(in *RPCMessage, out interface{}) error
 }
 
-// PayloadEncodeFnc encodes data to []bytes
+// PayloadEncodeFnc encodes data to bytes
 type PayloadEncodeFnc func(data interface{}) ([]byte, error)
 
 // RPCClient represents client of this RPC
 type RPCClient struct {
-	sender       MessageSender
-	ctx          context.Context
-	paylodEncode PayloadEncodeFnc
+	sender        MessageSender
+	ctx           context.Context
+	payloadEncode PayloadEncodeFnc
 }
 
 // NewRPCClient returns new client from config
 func NewRPCClient(ctx context.Context, sender MessageSender) *RPCClient {
 	return &RPCClient{
-		sender:       sender,
-		ctx:          ctx,
-		paylodEncode: json.Marshal,
+		sender:        sender,
+		ctx:           ctx,
+		payloadEncode: json.Marshal,
 	}
 }
 
 // ReplacePayloadEncoder replaces payload encode function of rpc client
 func (c *RPCClient) ReplacePayloadEncoder(encFnc PayloadEncodeFnc) {
-	c.paylodEncode = encFnc
+	c.payloadEncode = encFnc
 }
 
 // SendAsyncMsg sends message to message service asynchronously,
-// that means no waiting response from server
-func (c *RPCClient) SendAsyncMsg(svr ServiceName, mth MethodName, in interface{}) error {
-	payload, err := c.paylodEncode(in)
+// that means no waiting response from server.
+// If no encodeFnc given, use client default encode instead.
+func (c *RPCClient) SendAsyncMsg(svr ServiceName, mth MethodName, in interface{}, encodeFnc PayloadEncodeFnc) error {
+	if encodeFnc == nil {
+		// fallback to client default encode func
+		encodeFnc = c.payloadEncode
+	}
+
+	payload, err := encodeFnc(in)
 	if err != nil {
 		return errors.Wrapf(err, "cannot encode payload: %+v", in)
 	}
@@ -58,8 +63,12 @@ func (c *RPCClient) SendAsyncMsg(svr ServiceName, mth MethodName, in interface{}
 
 // SendSyncMsg sends message to message service synchronously,
 // that means it is blocked until received response from server
-func (c *RPCClient) SendSyncMsg(svr ServiceName, mth MethodName, in interface{}, out interface{}) error {
-	payload, err := c.paylodEncode(in)
+func (c *RPCClient) SendSyncMsg(svr ServiceName, mth MethodName, in interface{}, out interface{}, encodeFnc PayloadEncodeFnc) error {
+	if encodeFnc == nil {
+		encodeFnc = c.payloadEncode
+	}
+
+	payload, err := encodeFnc(in)
 	if err != nil {
 		return errors.Wrapf(err, "cannot encode payload: %+v", in)
 	}

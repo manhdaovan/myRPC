@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package message;
+
+option go_package="github.com/manhdaovan/myrpc/example/message";
+
+message EchoProtoIn {
+    string msg = 1;
+}
+
+message EchoProtoOut {
+    string msg = 1;
+}

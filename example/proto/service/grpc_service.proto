@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package service;
+
+option go_package="github.com/manhdaovan/myrpc/example/service";
+
+import "message/proto_message.proto";
+
+service EchoProto {
+    rpc EchoProto (message.EchoProtoIn) returns (message.EchoProtoOut);
+}

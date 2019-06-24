@@ -21,6 +21,11 @@ type ReceiverConf struct {
 	WaitTimeSeconds   int64     `yaml:"wait_time_seconds"`
 }
 
+// ReceiverConf contains info about config of message receiver
+type DeleterConf struct {
+	Queue QueueConf `yaml:"queue"`
+}
+
 // QueueConf contains info about message queue
 type QueueConf struct {
 	QueueRegion        string `yaml:"queue_region"`
@@ -46,7 +51,7 @@ func ReceiverConfFromYamlFile(filePath string) (*ReceiverConf, error) {
 	return &rc, nil
 }
 
-// SenderConfFromYamlFile returns ReceiverConf from given yaml conf file
+// SenderConfFromYamlFile returns DeleterConf from given yaml conf file
 func SenderConfFromYamlFile(filePath string) (*SenderConf, error) {
 	var sc SenderConf
 	bytes, err := fileToBytes(filePath)
@@ -59,6 +64,21 @@ func SenderConfFromYamlFile(filePath string) (*SenderConf, error) {
 	}
 
 	return &sc, nil
+}
+
+// DeleterConfFromYamlFile returns DeleterConf from given yaml conf file
+func DeleterConfFromYamlFile(filePath string) (*DeleterConf, error) {
+	var dc DeleterConf
+	bytes, err := fileToBytes(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid deleter conf file: %s", filePath)
+	}
+
+	if err := yaml.Unmarshal(bytes, &dc); err != nil {
+		return nil, errors.Wrapf(err, "cannot unmarshal deleter conf file: %s", filePath)
+	}
+
+	return &dc, nil
 }
 
 func fileToBytes(filePath string) ([]byte, error) {

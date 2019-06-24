@@ -4,8 +4,8 @@ import "encoding/json"
 
 // RPCMessage represents message of this RPC
 type RPCMessage struct {
-	SvrName  ServiceName `json:"service_name"`
-	MthName  MethodName  `json:"method_name"`
+	SvrName ServiceName `json:"service_name"`
+	MthName MethodName  `json:"method_name"`
 	Payload []byte      `json:"payload"`
 	// use for delete message
 	msgReceiptHandle string

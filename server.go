@@ -13,21 +13,21 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// MessageReceiver is the interface to receive message from message service
-type MessageReceiver interface {
-	ReceiveMsg() ([]*RPCMessage, error)
-}
-
 // MethodName is a key for map of methods in a service
 type MethodName string
 
 // MethodHandler is a abstract handler of a method
-type MethodHandler func(service interface{}, in interface{}) (interface{}, error)
+type MethodHandler func(ctx context.Context, service interface{}, in interface{}) (interface{}, error)
+
+// MethodDecodeFnc decodes data to output struct for current method
+type MethodDecodeFnc func(decodeFnc PayloadDecodeFnc, data []byte) (interface{}, error)
 
 // MethodDescription contains method name and its handler
 type MethodDescription struct {
-	Name    MethodName
-	Handler MethodHandler
+	Name          MethodName
+	Handler       MethodHandler
+	PayloadDecode PayloadDecodeFnc
+	DecodeHandle  MethodDecodeFnc
 }
 
 // ServiceName is a key for map of services in a RPC server
@@ -39,46 +39,60 @@ type ServiceDescription struct {
 	Methods map[MethodName]MethodDescription
 }
 
-// PayloadDecodeFnc decodes data to output struct
+// PayloadDecodeFnc decodes bytes into output struct
 type PayloadDecodeFnc func(data []byte, out interface{}) error
 
 // DefaultQuitSigs are signals that server listen by default
 var DefaultQuitSigs = []os.Signal{syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM}
 
+// MessageReceiver is the interface to receive message from message service
+type MessageReceiver interface {
+	ReceiveMsg() ([]*RPCMessage, error)
+}
+
+type MessageDeleter interface {
+	DeleteMsg(msg *RPCMessage) error
+}
+
 // RPCServer is struct of this RPC server
 type RPCServer struct {
 	ctx           context.Context
 	locker        sync.Mutex
-	servicesList  map[ServiceName]ServiceDescription
+	servicesDesc  map[ServiceName]ServiceDescription
+	services      map[ServiceName]interface{}
 	msgReceiver   MessageReceiver
+	msgDeleter    MessageDeleter
 	payloadDecode PayloadDecodeFnc
 	exitChan      chan os.Signal
 }
 
 // NewRPCServer return new RPC server
-func NewRPCServer(ctx context.Context, mr MessageReceiver) *RPCServer {
+func NewRPCServer(ctx context.Context, mr MessageReceiver, md MessageDeleter) *RPCServer {
 	return &RPCServer{
 		ctx:           ctx,
 		msgReceiver:   mr,
-		servicesList:  make(map[ServiceName]ServiceDescription),
+		msgDeleter:    md,
+		servicesDesc:  make(map[ServiceName]ServiceDescription),
+		services:      make(map[ServiceName]interface{}),
 		payloadDecode: json.Unmarshal, // default
 		exitChan:      make(chan os.Signal, 1),
 	}
 }
 
 // ReplacePayloadDecoder replaces payload decode function of rpc server
-func (srv *RPCServer) ReplacePayloadDecoder(decFnc PayloadDecodeFnc) {
+func (srv *RPCServer) ReplaceDecoder(decFnc PayloadDecodeFnc) {
 	srv.locker.Lock()
 	srv.payloadDecode = decFnc
 	srv.locker.Unlock()
 }
 
-// RegisterService adds new service to server by name and description
-func (srv *RPCServer) RegisterService(svName ServiceName, svDesc ServiceDescription) error {
+// RegisterService adds new service to server by name and description.
+// This method SHOULD NOT be called directly outside of RegisterXService() method of each service
+func (srv *RPCServer) RegisterService(svc interface{}, svName ServiceName, svDesc ServiceDescription) {
 	srv.locker.Lock()
-	defer srv.locker.Unlock()
-	srv.servicesList[svName] = svDesc
-	return nil
+	srv.servicesDesc[svName] = svDesc
+	srv.services[svName] = svc
+	srv.locker.Unlock()
 }
 
 // ListenQuitSigs listen on signals that make server quit when received.
@@ -123,23 +137,45 @@ func (srv *RPCServer) Serve() error {
 }
 
 func (srv *RPCServer) handleMsg(msg *RPCMessage) error {
-	svd, ok := srv.servicesList[msg.SvrName]
+	fmt.Printf("==> handle msg: %p\n", msg)
+	// get registered service description from server
+	svd, ok := srv.servicesDesc[msg.SvrName]
 	if !ok {
 		return fmt.Errorf("no service description for %s", msg.SvrName)
 	}
+
+	// get registered method description from service
 	mthd, ok := svd.Methods[msg.MthName]
 	if !ok {
 		return fmt.Errorf("no method description for %s", msg.MthName)
 	}
 
-	payload := srv.payloadDecode(msg.Payload)
-	service interface{}, in interface{}
-	mthd.Handler()
-	return nil
-}
+	// get registered service instance from server
+	svc, ok := srv.services[msg.SvrName]
+	if !ok {
+		return fmt.Errorf("no service instance for %s", msg.SvrName)
+	}
 
-func (srv *RPCServer) deleteMsg(msg *RPCMessage) error {
-	fmt.Println("deleteMsg ------ ", msg)
+	// decode payload
+	decodeFnc := mthd.PayloadDecode
+	if decodeFnc == nil {
+		// fallback to server default decode func
+		decodeFnc = srv.payloadDecode
+	}
+
+	in, err := mthd.DecodeHandle(decodeFnc, msg.Payload)
+	if err != nil {
+		return errors.Wrapf(err, "cannot decode payload msg", msg.Payload)
+	}
+
+	_, err = mthd.Handler(srv.ctx, svc, in)
+	if err == nil && srv.msgDeleter != nil {
+		if err := srv.msgDeleter.DeleteMsg(msg); err != nil {
+			return errors.Wrapf(err, "cannot delete msg: %+v", msg)
+		}
+		fmt.Printf("--> delete msg: %p\n", msg)
+	}
+
 	return nil
 }
 
