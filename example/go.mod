@@ -9,10 +9,8 @@ require (
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.9.2 // indirect
-	github.com/kr/pty v1.1.5 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/manhdaovan/myrpc v0.0.0-20190624104956-061d4e3824b4
-	github.com/rogpeppe/fastuuid v1.1.0 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
 	go.opencensus.io v0.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
@@ -27,4 +25,5 @@ require (
 	google.golang.org/appengine v1.6.1 // indirect
 	google.golang.org/genproto v0.0.0-20190620144150-6af8c5fc6601 // indirect
 	google.golang.org/grpc v1.21.1
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )

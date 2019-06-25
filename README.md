@@ -17,6 +17,8 @@ My own asynchronous RPC framework that support message in ANY format.
   - Define service and method descriptions as in `example/service/grpc_service_extend.go`, and implement RPC interfaces
     - The service and methods descriptions part could be auto generate after having message struct and RPC interfaces
   - Register it on server side as in `example/cmd/server/main.go`
+- Or you can create your own message format and use it, by implement your own message encoder/decoder
+  - Other steps are similar to above steps
 
 # Example
 See `/example` directory source code for more details
