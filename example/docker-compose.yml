@@ -1,0 +1,8 @@
+version: '3'
+services:
+  elasticmq:
+    image: "softwaremill/elasticmq"
+    volumes:
+      - ./config/elasticmq.conf:/opt/elasticmq.conf
+    ports:
+      - 9324:9324   

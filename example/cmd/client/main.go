@@ -30,7 +30,7 @@ func main() {
 	client := myrpc.NewRPCClient(ctx, sqsSender)
 	var wg sync.WaitGroup
 
-	// send message in json-format
+	// send message in json format
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(idx int) {

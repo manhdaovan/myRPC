@@ -21,7 +21,7 @@ type ReceiverConf struct {
 	WaitTimeSeconds   int64     `yaml:"wait_time_seconds"`
 }
 
-// ReceiverConf contains info about config of message receiver
+// DeleterConf contains info about config of message receiver
 type DeleterConf struct {
 	Queue QueueConf `yaml:"queue"`
 }

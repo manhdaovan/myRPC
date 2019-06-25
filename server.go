@@ -50,6 +50,7 @@ type MessageReceiver interface {
 	ReceiveMsg() ([]*RPCMessage, error)
 }
 
+// MessageDeleter is the interface to delete message from message service
 type MessageDeleter interface {
 	DeleteMsg(msg *RPCMessage) error
 }
